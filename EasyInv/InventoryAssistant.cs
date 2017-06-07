@@ -51,7 +51,7 @@ namespace EasyInv
             {
                 string url = $"{APIInformation.apiUrl}{APIInformation.upcBuffer}{upc.ToString()}{APIInformation.fieldName}{APIInformation.language}{APIInformation.appKey}{APIInformation.sigBuffer}{SigningSignature(upc.ToString(), APIInformation.authKey)}";
 
-                string item = await GetInventoryItemAsync(url);
+                string item = await GetInventoryItemAsync(url, upc);
                 SetNewItem(item);
             }
             catch (Exception e)
@@ -60,7 +60,7 @@ namespace EasyInv
             }
         }
 
-        private static async Task<string> GetInventoryItemAsync(string path)
+        private static async Task<string> GetInventoryItemAsync(string path, long upc)
         {
             string itemContents = "NULL";
             HttpResponseMessage response = await client.GetAsync(path);
@@ -71,7 +71,7 @@ namespace EasyInv
             }
             else
             {
-                Console.WriteLine("ERROR: Could not retrieve object with that UPC.");
+                Console.WriteLine($"WARNING: Could not retrieve object with UPC ({upc}).");
             }
             return itemContents;
         }
