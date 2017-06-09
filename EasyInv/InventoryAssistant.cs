@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Linq;
@@ -10,57 +11,90 @@ namespace EasyInv
 {
     public static class InventoryAssistant
     {
-        private struct APIInformation
+        //Made to be used with the Digit-Eyes UPC API
+        public static class APIInformation
         {
-            public const string upcBuffer = "upcCode=";
-            public const string sigBuffer = "&signature=";
+            private const string apiUrl = "https://www.digit-eyes.com/gtin/v2_0/?";
+            private const string upcBuffer = "upcCode=";
+            private const string fieldNameBuffer = "&field_names=";
+            private const string languageBuffer = "&language=";
+            private const string appKeyBuffer = "&app_key=";
+            private const string sigBuffer = "&signature=";
+            private const string keyFileExtension = ".api";
 
-            public const string fieldName = "&field_names=description";
-            public const string language = "&language=en";
-            public const string appKey = "&app_key=//y3i+dH0mmg";
-            public const string authKey = "Yh28K7l2a5Kg4Zv1";
-            public const string apiUrl = "https://www.digit-eyes.com/gtin/v2_0/?";
+            private static string appKey;
+            private static string authKey;
+            private static string language = "en";
+            private static string fieldName = "description";
+            private static bool _initialized = false;
 
-            public const char lineBreakDelimiter = ',';
-            public const char lineSeperatorDetlimiter = ':';
-            public const string lineTag = "description";
+            public static char lineBreakDelimiter = ',';
+            public static char lineSeperatorDetlimiter = ':';
+            public static string lineTag = "description";
+
+            public static bool Initialized { get => _initialized; }
+
+            public static void Init()
+            {
+                var di = new DirectoryInfo(Directory.GetCurrentDirectory());
+                try
+                {
+                    string firstFile = $"\\{di.EnumerateFiles().Select(v => v.Name).FirstOrDefault(v => v.EndsWith(keyFileExtension))}";
+                    string fullPath = di.FullName + firstFile;
+                    string[] contents = File.ReadAllLines(fullPath);
+                    appKey = contents[0];
+                    authKey = contents[1];
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"EasyInv: {e}\nMake sure there is a valid '.api' file in the root. Try 'EasyInv -setup' for more information.");
+                    return;
+                }
+                _initialized = true;
+            }
+
+            public static string GetFullUrl(long upcCode)
+            {
+                string fullUrl = $"{apiUrl}{upcBuffer}{upcCode}{fieldNameBuffer}{fieldName}" +
+                    $"{languageBuffer}{language}{appKeyBuffer}{appKey}" +
+                    $"{sigBuffer}{SigningSignature(upcCode.ToString(), authKey)}";
+                return fullUrl;
+            }
         }
 
         private static HttpClient client;
-        private static string itemTitle;
+        private static long currentUpcCode;
 
-        private static void SetNewItem(string item)
-        {
-            itemTitle = item;
-        }
-
-        public static void GetItemInformation(long upc, out string info)
+        public static string GetItemInformation(long upcCode)
         {
             client = new HttpClient();
-            RunAsync(upc).Wait();
-            info = itemTitle;
+            currentUpcCode = upcCode;
+            var request = RunAsync();
+            request.Wait();
+            return request.Result;
         }
 
-        private static async Task RunAsync(long upc)
+        private static async Task<string> RunAsync()
         {
             client.BaseAddress = new Uri("http://localhost:55268/");
             client.DefaultRequestHeaders.Accept.Clear();
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
+            string item = string.Empty;
             try
             {
-                string url = $"{APIInformation.apiUrl}{APIInformation.upcBuffer}{upc.ToString()}{APIInformation.fieldName}{APIInformation.language}{APIInformation.appKey}{APIInformation.sigBuffer}{SigningSignature(upc.ToString(), APIInformation.authKey)}";
-
-                string item = await GetInventoryItemAsync(url, upc);
-                SetNewItem(item);
+                string url = APIInformation.GetFullUrl(currentUpcCode);
+                item = await GetInventoryItemAsync(url);
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
+                Console.WriteLine("ERROR: Something went wrong.");
+                Console.WriteLine(e);
             }
+            return item;
         }
 
-        private static async Task<string> GetInventoryItemAsync(string path, long upc)
+        private static async Task<string> GetInventoryItemAsync(string path)
         {
             string itemContents = "NULL";
             HttpResponseMessage response = await client.GetAsync(path);
@@ -68,18 +102,19 @@ namespace EasyInv
             {
                 itemContents = await response.Content.ReadAsStringAsync();
                 itemContents = GetTitleFromJSON(itemContents);
+                Console.WriteLine($"EasyInv: UPC ({currentUpcCode}) succcesfully read.");
             }
             else
             {
-                Console.WriteLine($"WARNING: Could not retrieve object with UPC ({upc}).");
+                Console.WriteLine($"WARNING: Could not retrieve object with UPC ({currentUpcCode}).");
             }
             return itemContents;
         }
 
-        private static string SigningSignature(string upc, string auth)
+        private static string SigningSignature(string upcCode, string auth)
         {
             var hmac = new HMACSHA1(Encoding.UTF8.GetBytes(auth));
-            var m = hmac.ComputeHash(Encoding.UTF8.GetBytes(upc));
+            var m = hmac.ComputeHash(Encoding.UTF8.GetBytes(upcCode));
             return Convert.ToBase64String(m);
         }
 

@@ -13,15 +13,20 @@ namespace EasyInv
             //Declare vars
             string csvPath = string.Empty;
             string exportPath = string.Empty;
+            string resultsHeader = string.Empty;
             List<long> upcCodes = new List<long>();
             bool showHelp = false;
+            bool showSetup = false;
 
+            //Declare args
             var options = new OptionSet()
             {
-                { "c|csv=", "The path to a CSV containing UPC codes in the first collumn.", v => csvPath = v },
-                { "u|upc=", "A single UPC code to scan. Can be used multiple times in one execution (Example: EasyInv -u # -u #).",  (long v) => upcCodes.Add(v) },
-                { "e|export=", "Export results to a csv.", v => exportPath = v },
-                { "h|help", "Information on the commands for EasyInv.", v => showHelp = (v != null) }
+                { "c|csv=", "The path to a CSV containing UPC codes in the first collumn. Requires path to a '.csv' file.", v => csvPath = v },
+                { "u|upc=", "A single UPC code to scan. Can be used multiple times in one execution. Requires numerical UPC code.",  (long v) => upcCodes.Add(v) },
+                { "e|export=", "Export results to a csv. Requires a path to export to.", v => exportPath = v },
+                { "h|header=", "A header for the results.", v => resultsHeader = v },
+                { "setup", "Information on how to initalize EasyInv.", v => showSetup = (v != null) },
+                { "help", "Information on the commands for EasyInv.", v => showHelp = (v != null) }
             };
 
             //Parse args
@@ -31,23 +36,26 @@ namespace EasyInv
             }
             catch (OptionException e)
             {
-                Console.Write("\nEasyInv: ");
-                Console.WriteLine(e.Message);
-                Console.WriteLine("Try `EasyInv --help' for more information.");
+                Console.WriteLine($"\nEasyInv: {e.Message}\nTry `EasyInv -help' for more information.");
                 return;
             }
 
-            //Act on parsed args
+            //Display help if arg was passed or no arg was passed
             if (showHelp || args.Length == 0)
             {
                 DisplayHelp(options);
                 return;
             }
+            else if (showSetup)
+            {
+                DisplaySetup();
+                return;
+            }
 
+            //Read CSV if arg was passed
             if (!string.IsNullOrEmpty(csvPath))
             {
                 string document = "";
-
                 try
                 {
                     using (StreamReader sr = new StreamReader(csvPath))
@@ -55,9 +63,24 @@ namespace EasyInv
                         document = sr.ReadToEnd();
                     }
                 }
-                catch (Exception e)
+                catch (FileNotFoundException e)
                 {
-                    Console.WriteLine($"ERROR: Could not read file from path.\n{e}");
+                    Console.WriteLine($"EasyInv: {e.Message}.\nMake sure there is a file in the given path and try again.");
+                    return;
+                }
+                catch (DirectoryNotFoundException e)
+                {
+                    Console.WriteLine($"EasyInv: {e.Message}\nMake sure the given path is valid and try again.");
+                    return;
+                }
+                catch(Exception e)
+                {
+                    Console.WriteLine($"EasyInv: {e.Message}");
+                    return;
+                }
+                if (Path.GetExtension(csvPath) != ".csv")
+                {
+                    Console.WriteLine("EasyInv: Invalid file type. File must be a '.csv'.");
                     return;
                 }
 
@@ -70,14 +93,28 @@ namespace EasyInv
                     {
                         upcCodes.Add(upcCode);
                     }
+                    else
+                    {
+                        Console.WriteLine($"EasyInv: CSV file contains a non numerical entry in row ({i}).");
+                    }
                 }
             }
 
             //Get product information via UPC codes
+            if(upcCodes.Count == 0)
+            {
+                Console.WriteLine("EasyInv: No UPC codes were provided.");
+                return;
+            }
+            InventoryAssistant.APIInformation.Init();
+            if (!InventoryAssistant.APIInformation.Initialized)
+            {
+                return;
+            }
             CsvExport csv = new CsvExport();
             foreach (long upcCode in upcCodes)
             {
-                InventoryAssistant.GetItemInformation(upcCode, out string info);
+                string info = InventoryAssistant.GetItemInformation(upcCode);
                 AddToCSV(csv, info, upcCode);
             }
 
@@ -88,16 +125,16 @@ namespace EasyInv
                 {
                     csv.ExportToFile(exportPath);
                 }
-                catch
+                catch (Exception e)
                 {
-                    Console.WriteLine("ERROR: Could not export to path.");
+                    Console.WriteLine($"EasyInv: {e.Message}");
                     return;
                 }
                 Console.WriteLine($"EasyInv: Export succesful to path ({exportPath}).");
             }
             else
             {
-                Console.WriteLine($"EasyInv: Results..\n{csv.Export()}");
+                Console.WriteLine($"EasyInv: Results.\n\n{csv.Export()}");
             }
         }
 
@@ -110,9 +147,20 @@ namespace EasyInv
 
         private static void DisplayHelp(OptionSet options)
         {
-            Console.Write("\nEasyInv: ");
-            Console.WriteLine("Welcome to EasyInv; a program designed to make mass inventorying of objects a little bit easier.\nYou can enter a single UPC code or import a spreadsheet exported from a barcode scanning app on your phone.\nHere are the program options: ");
+            Console.WriteLine("\nEasyInv: Welcome to EasyInv; a program designed to make mass inventorying of objects a little bit easier." +
+                "\nYou can enter UPC codes manually or import a spreadsheet exported from a barcode scanning app on your phone (reccomended)." +
+                "\nHere are the program options.");
             options.WriteOptionDescriptions(Console.Out);
+        }
+
+        private static void DisplaySetup()
+        {
+            Console.WriteLine($"\nEasyInv: Here are the steps to get started with EasyInv." +
+                $"\n\t1. You will first need to sign up for the Digit-Eyes API (http://www.digit-eyes.com/api.html)." +
+                $"\n\t2. Then you will need to create a file at the path ({Directory.GetCurrentDirectory()}) with the extension '.api'." +
+                $"\n\t3. On the first line of this file, you will need to insert your application key provided by Digit-Eyes." +
+                $"\n\t4. On the next line, insert your authentication key which is also provided by Digit-Eyes." +
+                $"\n\t5. You are now ready to start using EasyInv! Try 'EasyInv -help' for more information.");
         }
     }
 }
