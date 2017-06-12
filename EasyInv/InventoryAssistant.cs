@@ -88,7 +88,7 @@ namespace EasyInv
             }
             catch (Exception e)
             {
-                Console.WriteLine($"ERROR: Something went wrong. {e.Message}");
+                Console.WriteLine($"EasyInv: Something went wrong. {e.Message}");
             }
             return item;
         }
@@ -119,8 +119,13 @@ namespace EasyInv
 
         private static string GetTitleFromJSON(string json)
         {
-            string title = json.Replace("\"", "").Replace("}", "").Replace("{", "").Split(APIInformation.lineBreakDelimiter).SingleOrDefault(s => s.Contains(APIInformation.lineTag)).Replace("\n", "");
-            title = title.Substring(title.IndexOf(APIInformation.lineSeperatorDetlimiter)).Replace(APIInformation.lineSeperatorDetlimiter, ' ').Trim();
+            string title = json.Replace("\"", "")
+                .Replace("}", "")
+                .Replace("{", "")
+                .Split(APIInformation.lineBreakDelimiter)
+                .SingleOrDefault(s => s.Contains(APIInformation.lineTag))
+                .Replace("\n", "");
+            title = title.Substring(title.IndexOf(APIInformation.lineSeperatorDetlimiter) + 1).Trim();
             return title;
         }
     }

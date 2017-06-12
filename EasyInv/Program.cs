@@ -152,7 +152,7 @@ namespace EasyInv
         private static void DisplayHelp(OptionSet options)
         {
             Console.WriteLine("\nEasyInv: Welcome to EasyInv; a program designed to make mass inventorying of objects a little bit easier." +
-                "\nYou can enter UPC codes manually or import a spreadsheet exported from a barcode scanning app on your phone (reccomended)." +
+                "\nYou can enter UPC codes manually or import a spreadsheet (exported from a barcode scanning app on your phone (reccomended))." +
                 "\nHere are the program options.");
             options.WriteOptionDescriptions(Console.Out);
         }
