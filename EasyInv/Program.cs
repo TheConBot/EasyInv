@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Linq;
 using JitBit.Util;
 using NDesk.Options;
 
@@ -13,7 +14,7 @@ namespace EasyInv
             //Declare vars
             string csvPath = string.Empty;
             string exportPath = string.Empty;
-            string resultsHeader = string.Empty;
+            string resultsHeader = "Header";
             List<long> upcCodes = new List<long>();
             bool showHelp = false;
             bool showSetup = false;
@@ -23,7 +24,7 @@ namespace EasyInv
             {
                 { "c|csv=", "The path to a CSV containing UPC codes in the first collumn. Requires path to a '.csv' file.", v => csvPath = v },
                 { "u|upc=", "A single UPC code to scan. Can be used multiple times in one execution. Requires numerical UPC code.",  (long v) => upcCodes.Add(v) },
-                { "e|export=", "Export results to a csv. Requires a path to export to.", v => exportPath = v },
+                { "e|export=", "Export results to a csv. Requires a path to a '.csv' file (it will create a new one at the location with the given filename).", v => exportPath = v },
                 { "h|header=", "A header for the results.", v => resultsHeader = v },
                 { "setup", "Information on how to initalize EasyInv.", v => showSetup = (v != null) },
                 { "help", "Information on the commands for EasyInv.", v => showHelp = (v != null) }
@@ -89,7 +90,8 @@ namespace EasyInv
                 for (int i = 0; i < rows.Length; i++)
                 {
                     cells = rows[i].Split(',');
-                    if (long.TryParse(cells[0], out long upcCode))
+                    string cell = new string(cells[0].Where(c => char.IsDigit(c)).ToArray());
+                if (long.TryParse(cell, out long upcCode))
                     {
                         upcCodes.Add(upcCode);
                     }
@@ -112,6 +114,8 @@ namespace EasyInv
                 return;
             }
             CsvExport csv = new CsvExport();
+            csv.AddRow();
+            csv[""] = resultsHeader;
             foreach (long upcCode in upcCodes)
             {
                 string info = InventoryAssistant.GetItemInformation(upcCode);

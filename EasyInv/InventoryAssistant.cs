@@ -47,7 +47,7 @@ namespace EasyInv
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine($"EasyInv: {e}\nMake sure there is a valid '.api' file in the root. Try 'EasyInv -setup' for more information.");
+                    Console.WriteLine($"EasyInv: {e.Message}\nMake sure there is a valid '.api' file in the root. Try 'EasyInv -setup' for more information.");
                     return;
                 }
                 _initialized = true;
@@ -88,8 +88,7 @@ namespace EasyInv
             }
             catch (Exception e)
             {
-                Console.WriteLine("ERROR: Something went wrong.");
-                Console.WriteLine(e);
+                Console.WriteLine($"ERROR: Something went wrong. {e.Message}");
             }
             return item;
         }
@@ -106,7 +105,7 @@ namespace EasyInv
             }
             else
             {
-                Console.WriteLine($"WARNING: Could not retrieve object with UPC ({currentUpcCode}).");
+                Console.WriteLine($"EasyInv: Could not retrieve object with UPC ({currentUpcCode}).");
             }
             return itemContents;
         }
@@ -120,7 +119,7 @@ namespace EasyInv
 
         private static string GetTitleFromJSON(string json)
         {
-            string title = json.Replace("\"", "").Replace("}", "").Replace("{", "").Split(APIInformation.lineBreakDelimiter).Single(s => s.Contains(APIInformation.lineTag)).Replace("\n", "");
+            string title = json.Replace("\"", "").Replace("}", "").Replace("{", "").Split(APIInformation.lineBreakDelimiter).SingleOrDefault(s => s.Contains(APIInformation.lineTag)).Replace("\n", "");
             title = title.Substring(title.IndexOf(APIInformation.lineSeperatorDetlimiter)).Replace(APIInformation.lineSeperatorDetlimiter, ' ').Trim();
             return title;
         }
