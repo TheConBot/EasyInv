@@ -28,3 +28,7 @@ Command | Value | Description
 
 * easyinv -c C:\Users\John\barcodes.csv -e C:\Users\John\results.csv -h Results
 * easyinv -u 056754365781 -u 018574659783 -e C:\Users\John\results.csv
+
+## License
+
+[MIT License](https://opensource.org/licenses/MIT)
