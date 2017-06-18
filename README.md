@@ -21,11 +21,10 @@ Command | Value | Description
 -u/--upc | 12 digit number | A single UPC code to scan. Can be used multiple times in one execution. Requires numerical UPC code.
 -e/--export | file path to '.csv' | Export results to a csv. Requires a path to a '.csv' file (it will create a new one at the location with the given filename).
 -h/--header | string | A header for the results.
---setup | NA | Information on how to initalize EasyInv.
---help | NA | Information on the commands for EasyInv.
+--setup |  | Information on how to initalize EasyInv.
+--help |  | Information on the commands for EasyInv.
 
 ### Examples: 
 
-'easyinv -c C:\Users\John\barcodes.csv -e C:\Users\John\results.csv -h Results'
-
-'easyinv -u 056754365781 -u 018574659783 -e C:\Users\John\results.csv'
+* easyinv -c C:\Users\John\barcodes.csv -e C:\Users\John\results.csv -h Results
+* easyinv -u 056754365781 -u 018574659783 -e C:\Users\John\results.csv
