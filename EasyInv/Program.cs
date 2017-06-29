@@ -2,7 +2,6 @@
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
-using JitBit.Util;
 using NDesk.Options;
 
 namespace EasyInv {
@@ -44,6 +43,12 @@ namespace EasyInv {
             }
             else if (showSetup) {
                 DisplaySetup();
+                return;
+            }
+
+            //Prepare API called and make sure API keys are available
+            InventoryAssistant.APIInformation.Init();
+            if (!InventoryAssistant.APIInformation.Initialized) {
                 return;
             }
 
@@ -91,16 +96,12 @@ namespace EasyInv {
                 Console.WriteLine("EasyInv: No UPC codes were provided.");
                 return;
             }
-            InventoryAssistant.APIInformation.Init();
-            if (!InventoryAssistant.APIInformation.Initialized) {
-                return;
-            }
-            CsvExport csv = new CsvExport();
-            csv.AddRow();
-            csv[""] = resultsHeader;
+            
+            List<ItemInformation> items = new List<ItemInformation>();
             foreach (long upcCode in upcCodes) {
-                string info = InventoryAssistant.GetItemInformation(upcCode);
-                AddToCSV(csv, info, upcCode);
+                string title = InventoryAssistant.GetItemInformation(upcCode);
+                ItemInformation newItem = new ItemInformation(title, upcCode);
+                items.Add(newItem);
             }
 
             //Output results
@@ -117,12 +118,6 @@ namespace EasyInv {
             else {
                 Console.WriteLine($"EasyInv: Results.\n\n{csv.Export()}");
             }
-        }
-
-        private static void AddToCSV(CsvExport csv, string title, long upcCode) {
-            csv.AddRow();
-            csv["Title"] = CsvExport.MakeValueCsvFriendly(title);
-            csv["UPC"] = upcCode;
         }
 
         private static void DisplayHelp(OptionSet options) {
