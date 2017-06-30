@@ -54,10 +54,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ExportAssistant.cs" />
-    <Compile Include="CsvExport.cs" />
+    <Compile Include="CSVAssistant.cs" />
     <Compile Include="InventoryAssistant.cs" />
-    <Compile Include="Program.cs" />
+    <Compile Include="EasyInv.cs" />
+    <Compile Include="ItemInformation.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

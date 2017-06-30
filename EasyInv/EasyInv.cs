@@ -2,11 +2,12 @@
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using NDesk.Options;
 
 namespace EasyInv {
 
-    class Program {
+    class EasyInv {
 
         static void Main(string[] args) {
             //Declare vars
@@ -41,64 +42,61 @@ namespace EasyInv {
                 DisplayHelp(options);
                 return;
             }
+            //Display setup is the arg was passed
             else if (showSetup) {
                 DisplaySetup();
                 return;
             }
 
-            //Prepare API called and make sure API keys are available
+            //Make sure API keys are available
             InventoryAssistant.APIInformation.Init();
             if (!InventoryAssistant.APIInformation.Initialized) {
                 return;
             }
 
-            //Read CSV if arg was passed
+            //Reads CSV containing barcodes if valid path was passed as an arg
             if (!string.IsNullOrEmpty(csvPath)) {
-                string document = "";
-                try {
-                    using (StreamReader sr = new StreamReader(csvPath)) {
-                        document = sr.ReadToEnd();
+                if (csvPath.EndsWith(".csv")) {
+                    try {
+                        upcCodes.AddRange(CSVAssistant.GetBarcodeCSV(csvPath));
+                    }
+                    catch (FileNotFoundException e) {
+                        Console.WriteLine($"EasyInv: {e.Message}.\nMake sure there is a file in the given path and try again.");
+                        return;
+                    }
+                    catch (DirectoryNotFoundException e) {
+                        Console.WriteLine($"EasyInv: {e.Message}\nMake sure the given path is valid and try again.");
+                        return;
+                    }
+                    catch (Exception e) {
+                        Console.WriteLine($"EasyInv: {e.Message}");
+                        return;
                     }
                 }
-                catch (FileNotFoundException e) {
-                    Console.WriteLine($"EasyInv: {e.Message}.\nMake sure there is a file in the given path and try again.");
-                    return;
-                }
-                catch (DirectoryNotFoundException e) {
-                    Console.WriteLine($"EasyInv: {e.Message}\nMake sure the given path is valid and try again.");
-                    return;
-                }
-                catch (Exception e) {
-                    Console.WriteLine($"EasyInv: {e.Message}");
-                    return;
-                }
-                if (Path.GetExtension(csvPath) != ".csv") {
+                else {
                     Console.WriteLine("EasyInv: Invalid file type. File must be a '.csv'.");
                     return;
                 }
+            }
 
-                string[] rows = document.Split('\n');
-                string[] cells;
-                for (int i = 0; i < rows.Length; i++) {
-                    cells = rows[i].Split(',');
-                    string cell = new string(cells[0].Where(c => char.IsDigit(c)).ToArray());
-                    if (long.TryParse(cell, out long upcCode)) {
-                        upcCodes.Add(upcCode);
-                    }
-                    else {
-                        Console.WriteLine($"EasyInv: CSV file contains a non numerical entry in row ({i}).");
+            //If export path already exists and is a csv, pull in the information
+            List<ItemInformation> items = new List<ItemInformation>();
+            if (File.Exists(exportPath) && exportPath.EndsWith(".csv")) {
+                items = CSVAssistant.GetRawCSV(exportPath).ToList();
+            }
+            //Get product information via UPC codes
+            foreach (long upcCode in upcCodes) {
+                //First need to make sure that if their are duplicates we dont add a new instance and up the quantity on the existing object
+                bool flag = false;
+                foreach (ItemInformation item in items) {
+                    if (upcCode == item.UpcCode) {
+                        item.Quantity++;
+                        flag = true;
+                        break;
                     }
                 }
-            }
+                if (flag) continue;
 
-            //Get product information via UPC codes
-            if (upcCodes.Count == 0) {
-                Console.WriteLine("EasyInv: No UPC codes were provided.");
-                return;
-            }
-            
-            List<ItemInformation> items = new List<ItemInformation>();
-            foreach (long upcCode in upcCodes) {
                 string title = InventoryAssistant.GetItemInformation(upcCode);
                 ItemInformation newItem = new ItemInformation(title, upcCode);
                 items.Add(newItem);
@@ -107,7 +105,7 @@ namespace EasyInv {
             //Output results
             if (!string.IsNullOrEmpty(exportPath)) {
                 try {
-                    csv.ExportToFile(exportPath);
+                    CSVAssistant.ExportCSV(items, exportPath);
                 }
                 catch (Exception e) {
                     Console.WriteLine($"EasyInv: {e.Message}");
@@ -116,7 +114,11 @@ namespace EasyInv {
                 Console.WriteLine($"EasyInv: Export succesful to path ({exportPath}).");
             }
             else {
-                Console.WriteLine($"EasyInv: Results.\n\n{csv.Export()}");
+                StringBuilder results = new StringBuilder();
+                foreach (ItemInformation item in items) {
+                    results.Append(item.ToString());
+                }
+                Console.WriteLine($"EasyInv: Results.\n\n{results}");
             }
         }
 

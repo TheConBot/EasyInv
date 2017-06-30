@@ -47,7 +47,7 @@ namespace EasyInv {
                 _initialized = true;
             }
 
-            public static string GetFullUrl(long upcCode) {
+            public static string GetFullAPIUrl(long upcCode) {
                 string fullUrl = $"{apiUrl}{upcBuffer}{upcCode}{fieldNameBuffer}{fieldName}" +
                     $"{languageBuffer}{language}{appKeyBuffer}{appKey}" +
                     $"{sigBuffer}{SigningSignature(upcCode.ToString(), authKey)}";
@@ -73,7 +73,7 @@ namespace EasyInv {
 
             string item = string.Empty;
             try {
-                string url = APIInformation.GetFullUrl(currentUpcCode);
+                string url = APIInformation.GetFullAPIUrl(currentUpcCode);
                 item = await GetInventoryItemAsync(url);
             }
             catch (Exception e) {
