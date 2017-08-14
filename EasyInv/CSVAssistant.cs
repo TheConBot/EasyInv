@@ -9,11 +9,17 @@ namespace EasyInv {
 
     public static class CSVAssistant {
 
-        public static IEnumerable<ItemInformation> GetRawCSV(string path) {
+        public static List<ItemInformation> GetRawCSV(string path) {
             using (StreamReader reader = new StreamReader(path)) {
                 var csv = new CsvReader(reader);
                 csv.Configuration.RegisterClassMap<ItemInformationMap>();
-                return csv.GetRecords<ItemInformation>().ToList();
+                try {
+                    //This needs to return a list because IEnum won't be loaded into mem all at once and when it goes to read the IEnum the reader is already closed, have to return the whole var at once
+                    return csv.GetRecords<ItemInformation>().ToList();
+                }
+                catch(CsvHelperException e) {
+                    return null;
+                }
             }
         }
 
@@ -49,9 +55,9 @@ namespace EasyInv {
 
     public class ItemInformationMap : CsvClassMap<ItemInformation> {
         public ItemInformationMap() {
-            Map(m => m.Title).Index(1);
-            Map(m => m.UpcCode).Index(2);
-            Map(m => m.Quantity).Index(3);
+            Map(m => m.Title).Index(0);
+            Map(m => m.UpcCode).Index(1);
+            Map(m => m.Quantity).Index(2);
         }
     }
 }

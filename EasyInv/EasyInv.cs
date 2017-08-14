@@ -82,11 +82,16 @@ namespace EasyInv {
             //If export path already exists and is a csv, pull in the information
             List<ItemInformation> items = new List<ItemInformation>();
             if (File.Exists(exportPath) && exportPath.EndsWith(".csv")) {
-                items = CSVAssistant.GetRawCSV(exportPath).ToList();
+                items = CSVAssistant.GetRawCSV(exportPath);
+                if (items == null) {
+                    Console.WriteLine($"EasyInv: Invalid CSV at export location.");
+                    return;
+                }
             }
+
             //Get product information via UPC codes
             foreach (long upcCode in upcCodes) {
-                //First need to make sure that if their are duplicates we dont add a new instance and up the quantity on the existing object
+                //First need to make sure that if there are duplicates we dont add a new instance and up the quantity on the existing object
                 bool flag = false;
                 foreach (ItemInformation item in items) {
                     if (upcCode == item.UpcCode) {
