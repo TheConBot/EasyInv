@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using NDesk.Options;
 
@@ -22,7 +21,7 @@ namespace EasyInv {
             var options = new OptionSet() {
                 { "c|csv=", "The path to a CSV containing UPC codes in the first collumn. Requires path to a '.csv' file.", v => csvPath = v },
                 { "u|upc=", "A single UPC code to scan. Can be used multiple times in one execution. Requires numerical UPC code.",  (long v) => upcCodes.Add(v) },
-                { "e|export=", "Export results to a csv. Requires a path to a '.csv' file (it will create a new one at the location with the given filename).", v => exportPath = v },
+                { "e|export=", "Export results to a csv. Requires a path to either an exiting '.csv' file to append or the desired path for a new one to be created (no export destination will print the results in the console).", v => exportPath = v },
                 { "h|header=", "A header for the results.", v => resultsHeader = v },
                 { "setup", "Information on how to initalize EasyInv.", v => showSetup = (v != null) },
                 { "help", "Information on the commands for EasyInv.", v => showHelp = (v != null) }
