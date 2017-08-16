@@ -10,6 +10,7 @@
 4. Create a text file at this location with the extension '.api'.
 5. On the first line of this file, you will need to insert your application key provided by Digit-Eyes.
 6. On the next line, insert your authentication key which is also provided by Digit-Eyes and save/close the file.
+7. It is reccomended you download a barcode scanning app that supports exporting to .csv for ease of use such as [this app for Android](https://play.google.com/store/apps/details?id=com.geekslab.qrbarcodescanner.pro&hl=en) or [this app for iOS](https://itunes.apple.com/us/app/free-qr-code-reader-barcode-scanner-for-iphone/id903799541?mt=8).
 
 ## Usage
 
